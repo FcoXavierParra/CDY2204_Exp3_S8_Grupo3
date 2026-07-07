@@ -1,0 +1,55 @@
+services:
+
+  # ─────────────────────────────────────────────────────────────
+  #  Servicio de colas RabbitMQ (broker de mensajeria + consola web)
+  #  Consola de administracion: http://localhost:15672 (guest / guest)
+  # ─────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq-guias
+    ports:
+      - "5672:5672"    # Puerto AMQP (usado por el backend Spring Boot)
+      - "15672:15672"  # Consola web de administracion
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────────
+  #  Backend Spring Boot (productor + consumidor + REST)
+  # ─────────────────────────────────────────────────────────────
+  gestion-pedidos:
+    build: .
+    image: gestion-pedidos:latest
+    container_name: gestion-pedidos
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # El broker se resuelve por el nombre del servicio dentro de la red de compose
+      RABBITMQ_HOST: rabbitmq
+      # El wallet de Oracle se monta en /app/wallet (ver volumes)
+      ORACLE_JDBC_URL: "jdbc:oracle:thin:@${ORACLE_TNS_ALIAS:-oraclecloudfparradb_tp}?TNS_ADMIN=/app/wallet"
+    volumes:
+      # Monta el wallet de Oracle Cloud desde el host (NO se incluye en la imagen ni en git)
+      - ./wallet:/app/wallet:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  rabbitmq_data:

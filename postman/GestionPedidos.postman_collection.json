@@ -1,0 +1,142 @@
+{
+  "info": {
+    "name": "Gestion de Pedidos ASINCRONO - CDY2204 S8",
+    "description": "Coleccion para probar los endpoints securitizados + el flujo asincrono con colas RabbitMQ y Oracle Cloud, contra el API Gateway / EC2. Define baseUrl, token (GESTOR) y tokenConsulta. Flujo: crear guia (COLA 1) -> verificar en RabbitMQ (:15672) -> listar procesadas (Oracle). Cola de errores (COLA 2): usar simularError=true.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://<TU_URL_API_GATEWAY>" },
+    { "key": "token", "value": "<JWT_ROL_GESTOR>" },
+    { "key": "tokenConsulta", "value": "<JWT_ROL_CONSULTA>" },
+    { "key": "guiaId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "1. Crear guia (GESTOR -> 201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroGuia\": \"G-001\",\n  \"transportista\": \"TransporteX\",\n  \"origen\": \"Santiago\",\n  \"destino\": \"Valparaiso\",\n  \"descripcion\": \"10 cajas de repuestos\",\n  \"fechaDespacho\": \"2026-06-27\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/guias", "host": ["{{baseUrl}}"], "path": ["api", "guias"] }
+      }
+    },
+    {
+      "name": "2. Subir guia a S3 (GESTOR -> 200)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/guias/{{guiaId}}/s3", "host": ["{{baseUrl}}"], "path": ["api", "guias", "{{guiaId}}", "s3"] }
+      }
+    },
+    {
+      "name": "3. Descargar guia (CONSULTA -> 200 PDF)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{tokenConsulta}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/guias/{{guiaId}}/descargar", "host": ["{{baseUrl}}"], "path": ["api", "guias", "{{guiaId}}", "descargar"] }
+      }
+    },
+    {
+      "name": "4. Actualizar guia (GESTOR -> 200)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroGuia\": \"G-001\",\n  \"transportista\": \"TransporteX\",\n  \"origen\": \"Santiago\",\n  \"destino\": \"Concepcion\",\n  \"descripcion\": \"10 cajas (destino corregido)\",\n  \"fechaDespacho\": \"2026-06-28\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/guias/{{guiaId}}", "host": ["{{baseUrl}}"], "path": ["api", "guias", "{{guiaId}}"] }
+      }
+    },
+    {
+      "name": "5. Eliminar guia (GESTOR -> 204)",
+      "request": {
+        "method": "DELETE",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/guias/{{guiaId}}", "host": ["{{baseUrl}}"], "path": ["api", "guias", "{{guiaId}}"] }
+      }
+    },
+    {
+      "name": "6. Consultar por transportista y fecha (GESTOR -> 200)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": {
+          "raw": "{{baseUrl}}/api/guias?transportista=TransporteX&fecha=2026-06-27",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "guias"],
+          "query": [
+            { "key": "transportista", "value": "TransporteX" },
+            { "key": "fecha", "value": "2026-06-27" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Crear guia con CONSULTA (-> 403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{tokenConsulta}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroGuia\": \"G-999\",\n  \"transportista\": \"TransporteX\",\n  \"origen\": \"Santiago\",\n  \"destino\": \"Valparaiso\",\n  \"fechaDespacho\": \"2026-06-27\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/guias", "host": ["{{baseUrl}}"], "path": ["api", "guias"] }
+      }
+    },
+    {
+      "name": "8. Crear guia sin token (-> 401)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroGuia\": \"G-000\",\n  \"transportista\": \"X\",\n  \"origen\": \"A\",\n  \"destino\": \"B\",\n  \"fechaDespacho\": \"2026-06-27\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/guias", "host": ["{{baseUrl}}"], "path": ["api", "guias"] }
+      }
+    },
+    {
+      "name": "9. Listar guias procesadas desde la cola (GESTOR -> 200)",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/guias-procesadas", "host": ["{{baseUrl}}"], "path": ["api", "guias-procesadas"] }
+      },
+      "response": []
+    },
+    {
+      "name": "10. Crear guia con simularError=true (-> COLA 2 de errores)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroGuia\": \"G-ERR-01\",\n  \"transportista\": \"TransporteX\",\n  \"origen\": \"Santiago\",\n  \"destino\": \"Valparaiso\",\n  \"descripcion\": \"Mensaje que se derivara a la COLA 2\",\n  \"fechaDespacho\": \"2026-06-27\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/guias?simularError=true",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "guias"],
+          "query": [ { "key": "simularError", "value": "true" } ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

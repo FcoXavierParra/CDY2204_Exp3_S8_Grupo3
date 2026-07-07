@@ -1,0 +1,36 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IDE ###
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+### Logs ###
+*.log
+
+### Secrets / entorno local ###
+.env
+*.pem
+wallet/
+### Wallet Oracle Cloud (NUNCA versionar) ###
+Wallet_*.zip
+Wallet_*/
+cwallet.sso
+ewallet.p12
+*.jks
+tnsnames.ora
+sqlnet.ora
+ojdbc.properties
+
+### OS ###
+.DS_Store
+Thumbs.db
