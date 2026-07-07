@@ -47,6 +47,14 @@
             <artifactId>ojdbc11</artifactId>
         </dependency>
 
+        <!-- Oracle PKI: necesario para leer el wallet de auto-login (cwallet.sso)
+             en la conexion mTLS a Oracle Cloud. Sin esto: "SSO KeyStore not available". -->
+        <dependency>
+            <groupId>com.oracle.database.security</groupId>
+            <artifactId>oraclepki</artifactId>
+            <version>21.9.0.0</version>
+        </dependency>
+
         <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
