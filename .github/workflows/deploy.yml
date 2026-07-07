@@ -1,4 +1,8 @@
-name: CI/CD - Build, Trivy, Push Docker Hub y Deploy en EC2
+name: "S8: Guia Despachos - Colas RabbitMQ y DB Oracle"
+
+# El nombre de cada ejecucion muestra la etapa actual (variable ETAPA del repo).
+# Cambia la etapa creando/editando la variable ETAPA (ej. "Pre Demo V02") sin tocar el codigo.
+run-name: "S8: Guia Despachos - Colas RabbitMQ y DB Oracle | Etapa: ${{ vars.ETAPA || 'Pre Demo V01' }}"
 
 on:
   push:
@@ -130,6 +134,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            # 0) Bootstrap: instalar Docker y unzip si la instancia del lab viene limpia
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Instalando Docker..."
+              sudo yum install -y docker 2>/dev/null || sudo amazon-linux-extras install -y docker 2>/dev/null || (sudo apt-get update && sudo apt-get install -y docker.io)
+              sudo systemctl enable --now docker 2>/dev/null || sudo service docker start || true
+            fi
+            command -v unzip >/dev/null 2>&1 || sudo yum install -y unzip 2>/dev/null || sudo apt-get install -y unzip
+
             # Red interna para que el backend resuelva 'rabbitmq' por nombre
             sudo docker network create guias-net || true
 
