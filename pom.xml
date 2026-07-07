@@ -47,11 +47,23 @@
             <artifactId>ojdbc11</artifactId>
         </dependency>
 
-        <!-- Oracle PKI: necesario para leer el wallet de auto-login (cwallet.sso)
-             en la conexion mTLS a Oracle Cloud. Sin esto: "SSO KeyStore not available". -->
+        <!-- Oracle PKI + OSDT: trio necesario para leer el wallet de auto-login
+             (cwallet.sso) en la conexion mTLS a Oracle Cloud.
+             Sin oraclepki: "SSO KeyStore not available".
+             Sin osdt_cert/osdt_core: ClassNotFoundException oracle.security.crypto.* -->
         <dependency>
             <groupId>com.oracle.database.security</groupId>
             <artifactId>oraclepki</artifactId>
+            <version>21.9.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.security</groupId>
+            <artifactId>osdt_cert</artifactId>
+            <version>21.9.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.security</groupId>
+            <artifactId>osdt_core</artifactId>
             <version>21.9.0.0</version>
         </dependency>
 
